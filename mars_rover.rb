@@ -17,19 +17,25 @@ Assume that the square directly North from (x, y) is (x, y+1).
 
 =end
 class Rover
-  def initialize(initial_position)
+  def initialize(initial_position, plateau)
+    @grid_size = plateau.map(&:to_i)
     conversion = initial_position.split(' ')
     @coordinates = conversion[0..1].map(&:to_i)
-    @rover_facing = conversion.last
+    @rover_facing = conversion.last.capitalize
   end
 
   def commands(list)
-    @list = list.chars
+    @commands = list.chars
   end
 
   def explore
-    @list.each { |command| command == 'M' ? move : rotate(command) }
-    @coordinates.map(&:to_s).join(' ') + ' ' + @rover_facing.to_s
+    @commands.each do |command|
+      break unless out_of_bounds?
+      command == 'M' ? move : rotate(command)
+    end
+    new_coordenates = @coordinates.map(&:to_s).join(' ')
+    final_facing = @rover_facing.to_s
+    out_of_bounds? ? 'new position:' + new_coordenates + ' ' + final_facing : 'Signal lost: Rover out of bounds'
   end
 
   private
@@ -42,7 +48,7 @@ class Rover
   def move
     case @rover_facing
     when 'N'
-      @coordinates[1] += 1 
+      @coordinates[1] += 1
     when 'E'
       @coordinates[0] += 1
     when 'S'
@@ -52,35 +58,43 @@ class Rover
     end
   end
 
+  def out_of_bounds?
+    (0..@grid_size[0]).cover?(@coordinates[0]) &&
+      (0..@grid_size[1]).cover?(@coordinates[1])
+  end
+
   def directions
     { 'N' => %w[W E],
       'E' => %w[N S],
       'S' => %w[E W],
-      'W' => %w[S N]
-    }
+      'W' => %w[S N] }
   end
 end
 
-puts '===================== Checkr Assessment ========================='
-puts '................. Explore Mars with Rovers.......................'
-puts ''
 @num = 0
-unless (ARGV[0]).nil?
-  File.foreach(ARGV[0]) do |line|
-    @matrix_size = line[/(\d\s\d)\n/, 1].split(' ') unless line[/(\d\s\d)\n/, 1].nil?
-    case line
-    when /(\d\s\d\s[NESW])\n/
-      @position_line = (line[/(\d\s\d\s[NESW])/])
-    when /[MRL]+\n/
-      rover = Rover.new(@position_line)
-      rover.commands(line[/[MRL]+/])
-      @num += 1
-      puts "Rover Num#{@num} Initial position: #{@position_line} | new position: #{rover.explore}"
-      puts '_____________________________________________________'
-    else
-      next
+if File.exist?(ARGV[0])
+  unless (ARGV[0]).nil?
+    puts '===================== Checkr Assessment ========================='
+    puts '................. Explore Mars with Rovers.......................'
+    puts ''
+    File.foreach(ARGV[0]) do |line|
+      @plateau = line[/(\d+\s\d+)\n/, 1].split(' ') unless line[/(\d+\s\d+)\n/, 1].nil?
+      case line
+      when /(\d+\s\d+\s[neswNESW])\n/
+        @position_line = (line[/(\d+\s\d+\s[neswNESW])/])
+      when /[MRL]+/
+        rover = Rover.new(@position_line, @plateau)
+        rover.commands(line[/[MRL]+/])
+        @num += 1
+        puts "Rover#{@num} Initial position: #{@position_line} | #{rover.explore}"
+        puts '_____________________________________________________'
+      else
+        next
+      end
     end
   end
+  puts @num < 1 ? 'No commands were went to Mars rovers' : " Total Rovers Moved: #{@num}"
+else
+  puts "CHECK FILE: No File were found"
 end
 
-puts @num < 1 ? 'No commands were went to Mars rovers' : " Total Rovers Moved: #{@num}"
