@@ -17,7 +17,22 @@ Assume that the square directly North from (x, y) is (x, y+1).
 
 =end
 
-
 puts '===================== Checkr Assessment ========================='
 puts '......................... Mars Rover ............................'
 puts ''
+num = 0
+mars_rovers_online = Hash.new
+File.open(ARGV[0]).each do |line|
+  @matrix_size = line[/(\d\s\d)\n/, 1].split(' ') unless line[/(\d\s\d)\n/, 1].nil?
+  case line
+  when /(\d\s\d\s[NESW])\n/
+    mars_rovers_online["rover_#{num}"]= []
+    mars_rovers_online["rover_#{num}"].push(line[/(\d\s\d\s[NESW])\n/])
+    num += 1
+  when /[MRL]\n/
+    mars_rovers_online["rover_#{num}"].push(line[/([LMR]+)/])
+  else
+    next
+  end
+  p mars_rovers_online
+end
